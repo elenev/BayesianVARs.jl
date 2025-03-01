@@ -9,8 +9,6 @@ struct VARParameters{T0,T1,T2}<:AbstractVARParameters
     end
 end
 
-VARPriors = VARParameters{T0,T1,T2} where {T0,T1<:CoefficientPrior,T2<:CovariancePrior}
-
 metadata(p::VARParameters) = p.meta
 coefficients(p::VARParameters) = p.Φ
 covariance(p::VARParameters) = p.Σ

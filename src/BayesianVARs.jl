@@ -13,10 +13,34 @@ import Base: rand, length, size
 import Distributions: logpdf, cdf, quantile, minimum, maximum, insupport, rand!, _logpdf
 import StatsBase: mean, var, modes, mode, skewness, kurtosis
 
+# Exports
+export  VARModel,
+        VARMeta,                       
+        VARParameters,       
+
+        ConditionalNormalPrior,
+        UnconditionalNormalPrior,
+        InverseWishartPrior,
+        DeterministicPrior,
+
+        minnesota,
+        simulate,
+        estimate,
+        instantiate,
+        initialize,
+        summarize,
+
+        isstable,
+        nlags,
+        ncoefs,
+        serror,
+
+        irf
+
 # Include files
 include("varmodel.jl")
-include("priors.jl")
 include("parameters.jl")
+include("priors.jl")
 include("deterministic_distro.jl")
 include("simulation.jl")
 include("estimation.jl")

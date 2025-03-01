@@ -2,10 +2,16 @@
 abstract type AbstractVARMeta end
 
 # Default implementation
-Base.@kwargs struct VARMeta{S} <: AbstractVARMeta
+Base.@kwdef struct VARMeta{M,S} <: AbstractVARMeta
     m::Int = 1                                          # Number of variables
     p::Int = 1                                          # Number of lags
     names::NTuple{M,S} = ntuple(i -> Symbol("Y$i"), M)  # Names of the variables
+    function VARMeta(m::Int, p::Int, names::NTuple{M,S}) where {M,S}
+        m > 0 || error("The number of variables must be positive")
+        p > 0 || error("The number of lags must be positive")
+        m == M || error("The number of series must be equal to the number of variables.")
+        new{M,S}(m,p,names)
+    end
 end
 nlags(meta::AbstractVARMeta) = meta.p
 length(meta::AbstractVARMeta) = meta.m

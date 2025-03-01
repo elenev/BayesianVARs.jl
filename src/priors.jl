@@ -27,6 +27,7 @@ end
 
 
 ## Traits for VARParameters containing priors
+VARPriors = VARParameters{T0,T1,T2} where {T0,T1<:CoefficientPrior,T2<:CovariancePrior}
 ispriors(p::AbstractVARParameters) = isa(coefficients(p), CoefficientPrior) && isa(covariance(p), CovariancePrior)
 
 abstract type AbstractPriorTraits end
