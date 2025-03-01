@@ -18,3 +18,6 @@ deps/src/
 deps/usr/
 docs/build/
 docs/site/
+
+# VS Code Stuff
+.vscode/
