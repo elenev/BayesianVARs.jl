@@ -20,4 +20,4 @@ docs/build/
 docs/site/
 
 # VS Code Stuff
-.vscode/
+.vscode/*
