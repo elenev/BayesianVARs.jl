@@ -88,13 +88,13 @@ function collapse_errors(vecΦ, data, P)
 end
 
 # Estimate
-function estimate(priors::AbstractVARParameters, data::AbstractMatrix{<:Number})
-    ispriors(priors) || error("The first argument must contain priors.")
-    return _estimate(_prior_traits(priors), priors, data)
+function estimate(priors::AbstractVARParameters, data::AbstractMatrix{<:Number}; use_normal=false)
+    is_priors(priors) || error("The first argument must contain priors.")
+    return _estimate(_prior_traits(priors), priors, data, use_normal)
 end
 
 # Estimate Normal Model
-function _estimate(::IsNormal, priors, data)
+function _estimate(::IsNormal, priors, data, use_normal)
 
     # Unpack
     Φ_prior = coefficients(priors)
@@ -118,7 +118,7 @@ function _estimate(::IsNormal, priors, data)
 end
 
 # Estimate Conjugate (Dependent Prior) Model
-function _estimate(::IsConjugate, priors, data)
+function _estimate(::IsConjugate, priors, data, use_normal)
 
     # Unpack
     Φ_prior = coefficients(priors)
@@ -152,8 +152,11 @@ function _estimate(::IsConjugate, priors, data)
 
     Σ_posterior = InverseWishart(ν_posterior, Ψ_posterior)
     V_posterior = kron(mean(Σ_posterior), V_posterior)
-    Φ_posterior = MvTDist(ν_posterior, μ_posterior, V_posterior)
-    #Φ_posterior = MultivariateNormal(μ_posterior, V_posterior)
+    if use_normal
+        Φ_posterior = MvNormal(μ_posterior, V_posterior)
+    else
+        Φ_posterior = MvTDist(ν_posterior, μ_posterior, V_posterior)
+    end
 
     return  VARParameters(priors.M, priors.P, Φ_posterior, Σ_posterior )
 end

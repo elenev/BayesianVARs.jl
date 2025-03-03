@@ -7,7 +7,7 @@ using   Distributions,      # For analytically defined priors and posteriors
         Format              # For formatting output
 
 # Import functions that will overloaded for the BayesianVARs module
-import Base: rand, length, size
+import Base: rand, length, size, eltype
 
 # Import functions necessary to define a new custom distribution
 import Distributions: logpdf, cdf, quantile, minimum, maximum, insupport, rand!, _logpdf
@@ -32,7 +32,16 @@ export  VARModel,
 
         isstable,
         nlags,
+        lags,
+        covariance,
+        constant,
+        series_names,
+        
+        coefficients,
+        metadata,
+        nseries,
         ncoefs,
+        
         serror,
 
         irf

@@ -1,7 +1,7 @@
 ## Simulation
 function _default_initial_conditions(mdl::AbstractVARModel)
     _check_eltype(mdl)
-    if isstable(mdl)
+    if is_stable(mdl)
         return steadystate(mdl)
     else
         return zeros(eltype(mdl), length(mdl))
@@ -28,6 +28,7 @@ function simulate(mdl::AbstractVARModel, T::Integer;
    M = length(mdl)
    P = nlags(mdl)
    AR = lags(mdl)
+   C = constant(mdl)
    Σ = covariance(mdl)
 
    # Initialize
@@ -39,7 +40,7 @@ function simulate(mdl::AbstractVARModel, T::Integer;
 
    # Simulate
    for t=P+1:T
-       Yt_mean = mdl.Constant + mapreduce(*,+,AR,eachrow(@view Y[t-1:-1:t-P,:]))
+       Yt_mean = C + mapreduce(*,+,AR,eachrow(@view Y[t-1:-1:t-P,:]))
        Y[t,:] .= Yt_mean + rand(rng, D)
    end
 

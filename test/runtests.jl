@@ -1,6 +1,5 @@
 using BayesianVARs
 using Test
 
-@testset "BayesianVARs.jl" begin
-    # Write your tests here.
-end
+@testset "Basics" begin include("basics.jl") end
+@testset "Instantiation" begin include("instantiation.jl") end
