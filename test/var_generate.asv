@@ -20,7 +20,7 @@ NormEstMdl = estimate(NormMdl, simdata{:,:});
 NormStruct = struct;
 NormStruct.Prior.Phi.Mu = NormMdl.Mu;
 NormStruct.Prior.Phi.V = NormMdl.V;
-NormStruct.Prior.Sigma.Psi = NormMdl.Covariance;
+Nor
 NormStruct.Post.Phi.Mu = NormEstMdl.Mu;
 NormStruct.Post.Phi.V = NormEstMdl.V;
 NormStruct.Post.Sigma.Psi = NormEstMdl.Covariance;
@@ -36,14 +36,10 @@ MNIWMdl = bayesvarm(3,2,'SeriesNames',simdata.Properties.VariableNames, ...
 MNIWEstMdl = estimate(MNIWMdl, simdata{:,:});
 
 MNIWStruct = struct;
-MNIWStruct.Prior.Phi.Mu = MNIWMdl.Mu;
-MNIWStruct.Prior.Phi.V = MNIWMdl.V;
-MNIWStruct.Prior.Sigma.nu = MNIWMdl.DoF;
-MNIWStruct.Prior.Sigma.Psi = MNIWMdl.Omega;
-MNIWStruct.Post.Phi.Mu = MNIWEstMdl.Mu;
-MNIWStruct.Post.Phi.V = MNIWEstMdl.V;
-MNIWStruct.Post.Sigma.nu = MNIWEstMdl.DoF;
-MNIWStruct.Post.Sigma.Psi = MNIWEstMdl.Omega;
+MNIWStruct.Phi.Mu = MNIWEstMdl.Mu;
+MNIWStruct.Phi.V = MNIWEstMdl.V;
+MNIWStruct.Sigma.nu = MNIWEstMdl.DoF;
+MNIWStruct.Sigma.Psi = MNIWEstMdl.Omega;
 
 %% Semi-conjugate bayesian model
 GibbsMdl = bayesvarm(3,2,'SeriesNames',simdata.Properties.VariableNames, ...
@@ -56,12 +52,8 @@ GibbsMdl = bayesvarm(3,2,'SeriesNames',simdata.Properties.VariableNames, ...
 GibbsEstMdl = estimate(GibbsMdl, simdata{:,:});
 
 GibbsStruct = struct;
-GibbsStruct.Prior.Phi.Mu = GibbsMdl.Mu;
-GibbsStruct.Prior.Phi.V = GibbsMdl.V;
-GibbsStruct.Prior.Sigma.nu = GibbsMdl.DoF;
-GibbsStruct.Prior.Sigma.Psi = GibbsMdl.Omega;
-GibbsStruct.Post.Phi = GibbsEstMdl.CoeffDraws;
-GibbsStruct.Post.Sigma = GibbsEstMdl.SigmaDraws;
+GibbsStruct.Phi = GibbsEstMdl.CoeffDraws;
+GibbsStruct.Sigma = GibbsEstMdl.SigmaDraws;
 
 %% Save results to struct
 out = struct('Normal',NormStruct,'MNIW',MNIWStruct,'Gibbs',GibbsStruct);
