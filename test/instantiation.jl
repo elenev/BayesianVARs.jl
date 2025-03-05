@@ -6,7 +6,7 @@ M = 3
 P = 2
 meta = VARMeta(p=P, m=M)
 
-Φdist = MvNormal(zeros(M*(M*P+1)), 1.0)
+Φdist = MvNormal(zeros(M*(M*P+1)), I)
 Σdist = InverseWishart(34, Matrix{Float64}(I, M, M))
 @testset "VARParameters from distro" begin
     mdlparams = VARParameters(meta, Φdist, Σdist)

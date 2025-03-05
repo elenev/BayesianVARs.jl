@@ -1,5 +1,5 @@
 using Test
-#using BayesianVARs
+using BayesianVARs
 using MAT, CSV
 import Distributions: MvNormal, InverseWishart
 
@@ -104,12 +104,12 @@ function get_matlab_minnesota_config(path)
 end
 
 # Load data
-data_path = "test/simdata.csv"
+data_path = "simdata.csv"
 csv_data = CSV.File(data_path)  # Read CSV file
 data = Float64.(stack(collect(x) for x in csv_data))'
 
 # Load MATLAB results
-matlab_results_path = "test/matlab_output.mat"
+matlab_results_path = "matlab_output.mat"
 meta = VARMeta(p=2, m=3)
 
 mn = get_matlab_minnesota_config(matlab_results_path)
@@ -127,6 +127,7 @@ semiconjugate_prior = minnesota(meta; mn..., prior=UnconditionalNormalPrior)
 end
 
 # Test estimation
+estimate = BayesianVARs.estimate
 normal_posterior = estimate(normal_prior, data)
 conjugate_posterior = estimate(conjugate_prior, data, use_normal=true)
 semiconjugate_posterior = estimate(semiconjugate_prior, data,N=100_000)
