@@ -51,8 +51,9 @@ end
 
 
 ## Minnesota prior
-function minnesota(M::Integer, P::Integer; ρ=zeros(M),
-    v₀=100., d=2., νₓ=nothing, σ²=ones(M), vₘ=100., ν::Integer=M+10,
+function minnesota(meta; ρ=zeros(length(meta)),
+    v₀=100., d=2., νₓ=nothing, σ²=ones(length(meta)), vₘ=100., 
+    ν::Integer=length(meta)+10,
     prior=UnconditionalNormalPrior, Σ=nothing )
 
     if νₓ === nothing && prior == UnconditionalNormalPrior
@@ -63,6 +64,8 @@ function minnesota(M::Integer, P::Integer; ρ=zeros(M),
     #if Σ !== nothing && prior == UnconditionalNormalPrior
     #    σ² = diag(Σ)
     #end
+    M = length(meta)
+    P = nlags(meta)
 
     # Prior on Φ
     # Means
@@ -104,5 +107,5 @@ function minnesota(M::Integer, P::Integer; ρ=zeros(M),
         Σ = DeterministicPrior(Σ)
     end
 
-    return VARParameters(M, P, Φ, Σ)
+    return VARParameters(meta, Φ, Σ)
 end

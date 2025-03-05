@@ -88,9 +88,10 @@ function collapse_errors(vecΦ, data, P)
 end
 
 # Estimate
-function estimate(priors::AbstractVARParameters, data::AbstractMatrix{<:Number}; use_normal=false)
+function estimate(priors::AbstractVARParameters, data::AbstractMatrix{<:Number}; 
+    use_normal=false, kwargs...)
     is_priors(priors) || error("The first argument must contain priors.")
-    return _estimate(_prior_traits(priors), priors, data, use_normal)
+    return _estimate(_prior_traits(priors), priors, data, use_normal; kwargs...)
 end
 
 # Estimate Normal Model
@@ -113,7 +114,7 @@ function _estimate(::IsNormal, priors, data, use_normal)
     V_posterior = inv(Sxx + V⁻)
     μ_posterior = V_posterior * (Sxy + V⁻*μ)
     V_posterior = (V_posterior + V_posterior')/2
-    return  VARParameters(priors.M, priors.P, MultivariateNormal(μ_posterior, V_posterior), 
+    return  VARParameters(metadata(priors), MultivariateNormal(μ_posterior, V_posterior), 
                              DeterministicMatrixDistribution(Σ))
 end
 
@@ -158,7 +159,7 @@ function _estimate(::IsConjugate, priors, data, use_normal)
         Φ_posterior = MvTDist(ν_posterior, μ_posterior, V_posterior)
     end
 
-    return  VARParameters(priors.M, priors.P, Φ_posterior, Σ_posterior )
+    return  VARParameters(metadata(priors), Φ_posterior, Σ_posterior )
 end
 
 function _initialize_distributions(Φ_prior::UnconditionalNormalPrior, Σ_prior::InverseWishartPrior)
@@ -185,7 +186,7 @@ function initialize(priors::AbstractVARParameters)
 end
 
 # Estimate Semi-conjugate (Independent Prior) Model
-function _estimate(::IsSemiConjugate, priors, data; 
+function _estimate(::IsSemiConjugate, priors, data, use_normal; 
                 rng = Random.default_rng(), N=50_000, BURN=1_000) 
 
     # Initialize

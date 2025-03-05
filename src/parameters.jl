@@ -71,9 +71,6 @@ function instantiate(f::Function, distros::VARParameters)
     return VARParameters(metadata(distros), vecΦ, Σ)
 end
 
-_scalar_version(f::Function) = x -> x
-_scalar_version(f::typeof(serror)) = x -> zeros(eltype(x), size(x))
-
 mean(d::AbstractVARParameters) = instantiate(mean,d)
 serror(d::AbstractVARParameters) = instantiate(serror,d)
 rand(rng::AbstractRNG, d::AbstractVARParameters) = instantiate(x -> rand(rng,x),d)
@@ -85,3 +82,6 @@ serror(x::AbstractVecOrMat{<:Number}) = zeros(eltype(x), size(x))
 serror(x::AbstractVector{<:AbstractVecOrMat}) = std(x)
 serror(x::ContinuousUnivariateDistribution) = std(x)
 serror(x::ContinuousDistribution) = sqrt.(var(x))
+
+_scalar_version(f::Function) = x -> x
+_scalar_version(f::typeof(serror)) = x -> zeros(eltype(x), size(x))

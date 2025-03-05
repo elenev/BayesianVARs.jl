@@ -13,6 +13,7 @@ Base.@kwdef struct VARMeta{M,S} <: AbstractVARMeta
         new{M,S}(m,p,names)
     end
 end
+
 nlags(meta::AbstractVARMeta) = meta.p
 length(meta::AbstractVARMeta) = meta.m
 series_names(meta::AbstractVARMeta) = meta.names

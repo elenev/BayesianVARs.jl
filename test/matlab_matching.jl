@@ -1,13 +1,37 @@
 using Test
-using BayesianVARs
-using MAT, Distributions
+#using BayesianVARs
+using MAT, CSV
+import Distributions: MvNormal, InverseWishart
 
-function Base.:(==)(a::VARParameters, b::VARParameters)
-    return a.Φ == b.Φ && a.Σ == b.Σ
+function recursive_equals(a, b)
+    try
+        if eltype(a) <: Integer && eltype(b) <: Integer
+            return a == b
+        else
+            return a ≈ b
+        end
+    catch
+        return all(
+            recursive_equals(getfield(a,f),getfield(b,f)) for f in propertynames(a)
+        )
+    end
 end
 
-matlab_results_path = "test/matlab_output.mat"
-meta = VARMeta(p=2, m=3)
+# function Base.:(==)(a::VARParameters, b::VARParameters)
+#     return recursive_equals(a, b)
+# end
+
+# function Base.:(==)(a::BayesianVARs.Prior, b::BayesianVARs.Prior)
+#     return recursive_equals(a, b)
+# end
+
+# function Base.:(==)(a::VARMeta, b::VARMeta)
+#     return recursive_equals(a, b)
+# end
+
+# function Base.:(==)(a::VARModel, b::VARModel)
+#     return recursive_equals(a, b)
+# end
 
 function get_matlab_priors(meta, path)
     matlab_results = matread(path)
@@ -20,7 +44,7 @@ function get_matlab_priors(meta, path)
             normal_prior["Phi"]["V"]
         ),
         DeterministicPrior(
-            normal_prior["Sigma"]
+            normal_prior["Sigma"]["Psi"]
         )
     )
 
@@ -60,12 +84,12 @@ function get_matlab_posteriors(meta, path)
     matlab_normal = VARParameters(
         meta,
         MvNormal(normal_posterior["Phi"]["Mu"][:], normal_posterior["Phi"]["V"]),
-        matlab_results["Normal"]["Sigma"]
+        BayesianVARs.DeterministicMatrixDistribution(normal_posterior["Sigma"]["Psi"])
         )
 
     mniw_posterior = matlab_results["MNIW"]["Post"]
     Sigma_posterior = InverseWishart(mniw_posterior["Sigma"]["nu"], mniw_posterior["Sigma"]["Psi"])
-    V = kron(mean(Sigma_posterior), inv(matlab_results["MNIW"]["Phi"]["V"]))
+    V = kron(mean(Sigma_posterior), mniw_posterior["Phi"]["V"])
     V = (V + V')/2
     Phi_posterior = MvNormal(mniw_posterior["Phi"]["Mu"][:], V)
     matlab_conjugate = VARParameters(
@@ -84,4 +108,41 @@ function get_matlab_posteriors(meta, path)
     return matlab_normal, matlab_conjugate, matlab_semiconjugate
 end
 
-matlab_normal, matlab_conjugate, matlab_semiconjugate = get_matlab_results(meta, matlab_results_path)
+function get_matlab_minnesota_config(path)
+    matlab_results = matread(path)
+
+    config = matlab_results["minnesota"]
+    return (ρ = config["Center"],
+            v₀ = config["SelfLag"],
+            νₓ = config["CrossLag"],
+            d = config["Decay"],
+            vₘ = config["VarianceX"])
+end
+
+# Load data
+data_path = "test/simdata.csv"
+csv_data = CSV.File(data_path)  # Read CSV file
+data = Float64.(stack(collect(x) for x in csv_data))'
+
+# Load MATLAB results
+matlab_results_path = "test/matlab_output.mat"
+meta = VARMeta(p=2, m=3)
+
+mn = get_matlab_minnesota_config(matlab_results_path)
+m_normal_prior, m_conjugate_prior, m_semiconjugate_prior = get_matlab_priors(meta, matlab_results_path)
+m_normal_posterior, m_conjugate_posterior, m_semiconjugate_posterior = get_matlab_posteriors(meta, matlab_results_path)
+
+# Test priors
+normal_prior = minnesota(meta; mn..., prior=UnconditionalNormalPrior, Σ=m_normal_prior.Σ.Ψ)
+conjugate_prior = minnesota(meta; mn..., prior=ConditionalNormalPrior)
+semiconjugate_prior = minnesota(meta; mn..., prior=UnconditionalNormalPrior)
+@testset "Priors" begin
+    @test recursive_equals(normal_prior, m_normal_prior)
+    @test recursive_equals(conjugate_prior, m_conjugate_prior)
+    @test recursive_equals(semiconjugate_prior, m_semiconjugate_prior)
+end
+
+# Test estimation
+normal_posterior = estimate(normal_prior, data)
+conjugate_posterior = estimate(conjugate_prior, data, use_normal=true)
+semiconjugate_posterior = estimate(semiconjugate_prior, data,N=10_000_000)
