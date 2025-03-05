@@ -46,7 +46,7 @@ MNIWStruct.Post.Sigma.Psi = MNIWEstMdl.Omega;
 %% Semi-conjugate bayesian model
 GibbsMdl = bayesvarm(3,2,'SeriesNames',simdata.Properties.VariableNames, ...
         minnesota, 'ModelType','semiconjugate');
-GibbsEstMdl = estimate(GibbsMdl, simdata{:,:},'NumDraws',1e7);
+GibbsEstMdl = estimate(GibbsMdl, simdata{:,:},'NumDraws',1e5);
 
 GibbsStruct = struct;
 GibbsStruct.Prior.Phi.Mu = GibbsMdl.Mu;

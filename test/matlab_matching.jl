@@ -17,22 +17,6 @@ function recursive_equals(a, b)
     end
 end
 
-# function Base.:(==)(a::VARParameters, b::VARParameters)
-#     return recursive_equals(a, b)
-# end
-
-# function Base.:(==)(a::BayesianVARs.Prior, b::BayesianVARs.Prior)
-#     return recursive_equals(a, b)
-# end
-
-# function Base.:(==)(a::VARMeta, b::VARMeta)
-#     return recursive_equals(a, b)
-# end
-
-# function Base.:(==)(a::VARModel, b::VARModel)
-#     return recursive_equals(a, b)
-# end
-
 function get_matlab_priors(meta, path)
     matlab_results = matread(path)
 
@@ -145,4 +129,21 @@ end
 # Test estimation
 normal_posterior = estimate(normal_prior, data)
 conjugate_posterior = estimate(conjugate_prior, data, use_normal=true)
-semiconjugate_posterior = estimate(semiconjugate_prior, data,N=10_000_000)
+semiconjugate_posterior = estimate(semiconjugate_prior, data,N=100_000)
+
+function compare_simulated_posteriors(mat,jul;tol=0.01,moments=(mean,serror))
+    for f in moments
+        matcoefs = f(mat)
+        julcoefs = f(jul)
+        @test all(abs(m-j) < tol for (m,j) in zip(
+            coefficients(matcoefs),coefficients(julcoefs)))
+        @test all(abs(m-j) < tol for (m,j) in zip(
+            covariance(matcoefs),covariance(julcoefs)))
+    end
+end
+
+@testset "Posteriors" begin
+    @test recursive_equals(normal_posterior, m_normal_posterior)
+    @test recursive_equals(conjugate_posterior, m_conjugate_posterior)
+    compare_simulated_posteriors(semiconjugate_posterior, m_semiconjugate_posterior)
+end
