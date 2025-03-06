@@ -221,3 +221,66 @@ function _estimate(::IsSemiConjugate, priors, data, use_normal;
                         [covariance(chain) for chain in chains]
                         )
 end
+
+@model function bvar(Y,X,priors)
+    T = size(Y,1)
+    M = nseries(priors)
+    P = nlags(priors)
+
+    # (Univariate) Cofficient Priors
+    N = M*(M*P+1)
+    vecΦ = Vector{Float64}(undef, M*(M*P+1))
+    for n=1:N
+        vecΦ[n] ~ coefficients(priors)[n]
+    end
+    Φ = reshape(vecΦ, M*P+1, M)
+
+    try
+        # Matrix-Variate Covariance Priors
+        # No other way to reliably enforce positive-definiteness
+        Σ ~ InverseWishart(covariance(priors).ν, covariance(priors).Ψ)
+
+        # Likelihood
+        Ymean = X*Φ
+        Y ~ MatrixNormal(Ymean, I(T), Σ)
+    catch e
+        if e isa PosDefException
+            Turing.@addlogprob! -Inf; 
+        end 
+    end
+end
+
+function _estimate(::IsIntractable, priors, data, use_normal; 
+    rng = Random.default_rng(), N=50_000, BURN=1_000) 
+
+    # Rewrite data
+    T, M = size(data)
+    P = nlags(priors)
+    Y = data[P+1:end,:]
+    X = ones(T-P, M*P+1)
+    for p=1:P
+        X[:,M*(p-1)+1:M*p] .= data[P+1-p:end-p,:]
+    end
+
+    # Condition model
+    mdl = bvar(Y,X,priors)
+
+    # Sample
+    chains = sample(rng, mdl, HMC(0.01, 10),N+BURN)
+    chains = chains[BURN+1:end,:,:]
+
+    # Retrieve coefficients and covariance matrices
+    coefnames = [:vecΦ, :Σ]
+    chaincontents = get(chains, coefnames)
+    coefiterators = map(
+        coef -> eachrow(hcat(chaincontents[coef]...)),
+        coefnames
+    )
+
+    Φ_chains = [x for x in coefiterators[1]]
+    Σ_chains = [reshape(x,M,M) for x in coefiterators[2]]
+
+    # Build VARParameters
+    #return chains
+    return VARParameters(metadata(priors), Φ_chains, Σ_chains)
+end

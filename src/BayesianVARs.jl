@@ -4,7 +4,8 @@ using   Distributions,      # For analytically defined priors and posteriors
         LinearAlgebra,      # For matrix operations
         Random,             # For sampling from posteriors
         Statistics,         # For calculating statistics and extending some
-        Format              # For formatting output
+        Format,             # For formatting output
+        Turing              # For analytically intractable Priors
 
 # Import functions that will overloaded for the BayesianVARs module
 import Base: rand, length, size, eltype
@@ -22,6 +23,7 @@ export  VARModel,
         UnconditionalNormalPrior,
         InverseWishartPrior,
         DeterministicPrior,
+        VectorOfPriors,
 
         minnesota,
         simulate,

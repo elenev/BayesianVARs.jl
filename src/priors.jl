@@ -14,6 +14,15 @@ struct ConditionalNormalPrior{T1,T2} <: CoefficientPrior
     V::T2
 end
 
+# vec(Φ)ᵢ ~ F
+struct VectorOfPriors{T<:UnivariateDistribution} <: CoefficientPrior
+    priors::Vector{T}
+end
+Base.getindex(p::VectorOfPriors, i) = p.priors[i]
+Base.size(p::VectorOfPriors) = size(p.priors)
+Base.length(p::VectorOfPriors) = length(p.priors)
+Base.lastindex(p::VectorOfPriors) = lastindex(p.priors)
+
 # Σ ~ IW(ν, Ψ)
 struct InverseWishartPrior{T1,T2} <: CovariancePrior
    ν::T1
@@ -34,6 +43,7 @@ abstract type AbstractPriorTraits end
 struct IsNormal<:AbstractPriorTraits end
 struct IsConjugate<:AbstractPriorTraits end
 struct IsSemiConjugate<:AbstractPriorTraits end
+struct IsIntractable<:AbstractPriorTraits end
 
 function _prior_traits(priors::AbstractVARParameters)
     Φ_prior = coefficients(priors)
@@ -45,7 +55,7 @@ function _prior_traits(priors::AbstractVARParameters)
     elseif Φ_prior isa UnconditionalNormalPrior && Σ_prior isa InverseWishartPrior
         return IsSemiConjugate()
     else
-        return nothing
+        return IsIntractable()
     end
 end
 
@@ -56,7 +66,7 @@ function minnesota(meta; ρ=zeros(length(meta)),
     ν::Integer=length(meta)+10,
     prior=UnconditionalNormalPrior, Σ=nothing )
 
-    if νₓ === nothing && prior == UnconditionalNormalPrior
+    if νₓ === nothing && prior != ConditionalNormalPrior
         νₓ = 1.
     end
 
@@ -79,13 +89,18 @@ function minnesota(meta; ρ=zeros(length(meta)),
     vecμ = vec(μ')
 
     # Variances
-    if prior == UnconditionalNormalPrior
+    if prior == UnconditionalNormalPrior || prior == VectorOfPriors
         V11 = I.*(v₀ - νₓ) + νₓ*σ².*σ²'
         V = vcat([V11./p^d for p in 1:P]...)
         V = vcat(V, vₘ*ones(1,M))
-        V = diagm(0 => vec(V))
+        vecV = vec(V)
 
-        Φ = UnconditionalNormalPrior(vecμ, V)
+        if prior == UnconditionalNormalPrior
+            V = diagm(0 => V)
+            Φ = UnconditionalNormalPrior(vecμ, vecV)
+        else
+            Φ = VectorOfPriors([Normal(μᵢ, vᵢ) for (μᵢ, vᵢ) in zip(vecμ, vecV)])
+        end
     elseif prior == ConditionalNormalPrior
         if νₓ !== nothing && νₓ != v₀
             @warn "νₓ is set and ≠ v₀, but νₓ is unused in ConditionalNormalPrior."
@@ -95,6 +110,8 @@ function minnesota(meta; ρ=zeros(length(meta)),
         append!(V, vₘ)
         V = diagm(0 => vec(V'))
         Φ = ConditionalNormalPrior(vecμ, V)
+    elseif Prior == VectorOfPriors
+
     else
         error("prior type must be either UnconditionalNormalPrior or ConditionalNormalPrior")
     end
